@@ -5,13 +5,18 @@ import javax.jms.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 
-public class JMSProducerTest {
+public class ResponseTimeProducer {
     public static void main(String[] args) throws JMSException, IOException, InterruptedException {
 
 //         === Read content from file ===
         String filePath = "message.txt";  // or use an absolute path like "C:/files/message.txt"
         String messageContent = new String(Files.readAllBytes(Paths.get(filePath)));
+
+
+        ArrayList<Long> responseTimes = new ArrayList<>();
 
 //        Connect to apache activemq
         ConnectionFactory factory = new ActiveMQConnectionFactory("tcp://localhost:61616");
@@ -21,14 +26,22 @@ public class JMSProducerTest {
         Queue queue = session.createQueue("TEST.QUEUE");
 
         MessageProducer producer = session.createProducer(queue);
+
         TextMessage message = session.createTextMessage(messageContent);
         // Benchmark
-        for (int i = 0; i < 10000; i++) {
-            long timestamp = System.nanoTime();  // Capture timestamp of when message was sent
-            message.setLongProperty("timestamp", timestamp); // Add timestamp to message
-            producer.send(message);
+        for (int run = 0; run < 1000; run++) {
+            long produceStart = System.nanoTime();
+            for (int i = 0; i < 1000; i++) {
+                producer.send(message);
+            }
+            long produceEnd = System.nanoTime();
+            responseTimes.add(produceEnd - produceStart);
         }
-        System.out.println("Sent 10000 messages from file content.");
+        Collections.sort(responseTimes);
+        long medianResponseTime = responseTimes.get(responseTimes.size() / 2);
+        System.out.println("Sent 10000 runs from file content.");
+        System.out.println("Median response time for 1k messages (ns): " + medianResponseTime);
+
         connection.close();
     }
 }
