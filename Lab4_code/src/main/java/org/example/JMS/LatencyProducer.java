@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-public class JMSProducerTest {
+public class LatencyProducer {
     public static void main(String[] args) throws JMSException, IOException, InterruptedException {
 
 //         === Read content from file ===

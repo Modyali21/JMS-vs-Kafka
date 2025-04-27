@@ -5,9 +5,8 @@ import javax.jms.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-public class JMSConsumerTest {
+public class LatencyConsumer {
     public static void main(String[] args) throws JMSException, InterruptedException {
 
         List<Long> latencies = new ArrayList<>();

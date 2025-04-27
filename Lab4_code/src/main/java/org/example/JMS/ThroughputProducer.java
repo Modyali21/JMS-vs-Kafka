@@ -5,9 +5,9 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import javax.jms.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.concurrent.TimeUnit;
 
-public class ThroughputJMSProducer {
+public class ThroughputProducer {
+
     public static void main(String[] args) throws Exception {
         String filePath = "message.txt";
         String messageContent = new String(Files.readAllBytes(Paths.get(filePath)));
@@ -19,36 +19,32 @@ public class ThroughputJMSProducer {
         Queue queue = session.createQueue("TEST.QUEUE");
         MessageProducer producer = session.createProducer(queue);
         TextMessage message = session.createTextMessage(messageContent);
-
-        int maxSuccessfulThroughput = 0;
-        int throughput = 10;
+        double maxSuccessfulThroughput = 0;
+        int count = 100;
+        double throughput = 0;
 
         while (true) {
-            System.out.println("\nTesting throughput: " + throughput + " msg/s");
-            long periodNs = 1_000_000_000L / throughput;
-            long adjustedSleepNs = (long) (periodNs * 0.8);
-
-            long testStart = System.nanoTime();
-            for (int i = 0; i < throughput; i++) {
-                long sendStart = System.nanoTime();
+            System.out.println("Testing count: " + count + " msg");
+            double periodNs = 1000.0 / count;
+            long startTime = System.currentTimeMillis();
+            for (int i = 0; i < count; i++) {
                 producer.send(message);
-                long sendEnd = System.nanoTime();
-
-                long sleepTime = adjustedSleepNs - (sendEnd - sendStart);
-                if (sleepTime > 0) {
-                    TimeUnit.NANOSECONDS.sleep(sleepTime);
-                }
+                Thread.sleep((long) (periodNs - 0.2 * periodNs));
             }
-            long testDurationMs = (System.nanoTime() - testStart) / 1_000_000;
-            System.out.println("Sent " + throughput + " messages in " + testDurationMs + " ms");
+            long duration = System.currentTimeMillis() - startTime;
 
+            System.out.println("Sent " + count + " messages in " + (duration) + " ms");
+            throughput = count/(duration/1_000.0);
+            System.out.println("Throughput: " + throughput);
+
+            // Let consumer validate
             Thread.sleep(3000); // Wait for consumer
 
-            if (testDurationMs <= 1000 && ThroughputJMSConsumer.validateReceivedCount(throughput)) {
+            if (ThroughputConsumer.validateReceivedCount(count, throughput)) {
                 maxSuccessfulThroughput = throughput;
-                throughput *= 2;
+                count *= 2;
             } else {
-                System.out.println("❌ Failed at throughput: " + throughput);
+                System.out.println("Failed at throughput: " + count);
                 break;
             }
         }

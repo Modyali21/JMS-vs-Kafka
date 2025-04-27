@@ -10,11 +10,6 @@ import java.util.Collections;
 public class ResponseTimeConsumer {
     public static void main(String[] args) throws JMSException, IOException, InterruptedException {
 
-//         === Read content from file ===
-        String filePath = "message.txt";  // or use an absolute path like "C:/files/message.txt"
-        String messageContent = new String(Files.readAllBytes(Paths.get(filePath)));
-
-
         ArrayList<Long> responseTimes = new ArrayList<>();
 
 //        Connect to apache activemq
@@ -24,21 +19,18 @@ public class ResponseTimeConsumer {
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Queue queue = session.createQueue("TEST.QUEUE");
 
-        MessageProducer producer = session.createProducer(queue);
-        TextMessage message = session.createTextMessage(messageContent);
+        MessageConsumer consumer = session.createConsumer(queue);
 
         // Benchmark
-        long startTime = System.currentTimeMillis();
-
-            for (int i = 0; i < 10000; i++) {
-                long produceStart = System.nanoTime();
-                producer.send(message);
-                long produceEnd = System.nanoTime();
-                responseTimes.add(produceEnd - produceStart);
+            for (int i = 0; i < 1000; i++) {
+                long consumerStart = System.nanoTime();
+                consumer.receive();
+                long consumerEnd = System.nanoTime();
+                responseTimes.add(consumerEnd - consumerStart);
             }
         Collections.sort(responseTimes);
         long medianResponseTime = responseTimes.get(responseTimes.size() / 2);
-        System.out.println("Sent 10000 runs from file content.");
+        System.out.println("received 1000 messages.");
         System.out.println("Median response time of consumer  for 1k messages (ns): " + medianResponseTime);
 
         connection.close();
