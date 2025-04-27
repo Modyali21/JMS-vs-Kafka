@@ -17,7 +17,6 @@ public class JMSConsumerTest {
         connection.start();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Queue queue = session.createQueue("TEST.QUEUE");
-
         MessageConsumer consumer = session.createConsumer(queue);
 
         // Benchmark
