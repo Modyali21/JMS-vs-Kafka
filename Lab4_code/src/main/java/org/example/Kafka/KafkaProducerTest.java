@@ -1,34 +1,61 @@
 package org.example.Kafka;
 
-import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.ProducerConfig;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 public class KafkaProducerTest {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+        // Producer properties
         Properties props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092");
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
 
-        Producer<String, String> producer = new KafkaProducer<>(props);
+        KafkaProducer<String, String> producer = new KafkaProducer<>(props);
 
-        // Warm-up (optional)
-        for (int i = 0; i < 100; i++) {
-            producer.send(new ProducerRecord<>("test-topic", "Warm-up " + i));
+        int numberOfMessages = 1000;
+        int loops = 1000;
+        long[] produceTimes = new long[loops];
+
+        // Read message from message.txt file
+        //         === Read content from file ===
+        String filePath = "message.txt";  // or use an absolute path like "C:/files/message.txt"
+        String messageContent = new String(Files.readAllBytes(Paths.get(filePath)));
+        String value = messageContent;
+
+        // Calculate the median response time (when sending 1000 messages) in 1000 runs
+        for (int i = 0; i < loops; i++) {
+            long startTime = System.nanoTime();
+            for (int j = 0; j < numberOfMessages; j++) {
+                producer.send(new ProducerRecord<>("test-topic", Integer.toString(j), value)).get();
+            }
+            long endTime = System.nanoTime();
+            produceTimes[i] = endTime - startTime;
+            System.out.println(i);
         }
-
-        // Benchmark
-        long startTime = System.currentTimeMillis();
-        for (int i = 0; i < 1000; i++) {
-            long produceStart = System.nanoTime();
-            producer.send(new ProducerRecord<>("test-topic", "Message " + i));
-            long produceEnd = System.nanoTime();
-            System.out.println("Produce Latency (ns): " + (produceEnd - produceStart));
-        }
-        long totalTime = System.currentTimeMillis() - startTime;
-        System.out.println("Total Produce Time (ms): " + totalTime);
-        System.out.println("Throughput (msg/s): " + (1000 / (totalTime / 1000.0)));
-
         producer.close();
+
+        java.util.Arrays.sort(produceTimes);
+        System.out.println("Median produce time (ns): " + produceTimes[loops / 2]);
+    }
+
+    // Method to read the content of message.txt file
+    private static String readMessageFromFile(String filename) throws IOException {
+        StringBuilder messageBuilder = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                messageBuilder.append(line).append("\n");
+            }
+        }
+        return messageBuilder.toString();
     }
 }
