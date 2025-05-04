@@ -19,8 +19,8 @@ public class LatencyProducer {
         connection.start();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Queue queue = session.createQueue("TEST.QUEUE");
-
         MessageProducer producer = session.createProducer(queue);
+        producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
         TextMessage message = session.createTextMessage(messageContent);
         // Benchmark
         for (int i = 0; i < 10000; i++) {

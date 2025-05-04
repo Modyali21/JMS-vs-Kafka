@@ -16,15 +16,18 @@ public class ThroughputConsumer {
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Queue queue = session.createQueue("TEST.QUEUE");
         MessageConsumer consumer = session.createConsumer(queue);
-        System.out.println(throughput);
         long timeoutMs = (long) Math.max(5000, (expectedCount * 100) / throughput);
         long deadline = System.currentTimeMillis() + timeoutMs;
 
         // Phase 1: Consume expected messages
+        long startTime = System.currentTimeMillis();
         while (counter.get() < expectedCount && System.currentTimeMillis() < deadline) {
             Message msg = consumer.receive(100);
             if (msg != null) counter.incrementAndGet();
         }
+        long duration = System.currentTimeMillis() - startTime;
+        throughput = counter.get() / (duration / 1000.0);
+        System.out.println("📊 Consumer Throughput: " + throughput + " msg/s");
 
         // Phase 2: Purge remaining messages (NEW)
         System.out.println("Purging remaining messages...");

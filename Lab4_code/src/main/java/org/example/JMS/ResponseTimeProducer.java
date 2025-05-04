@@ -24,9 +24,8 @@ public class ResponseTimeProducer {
         connection.start();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Queue queue = session.createQueue("TEST.QUEUE");
-
         MessageProducer producer = session.createProducer(queue);
-
+        producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
         TextMessage message = session.createTextMessage(messageContent);
         // Benchmark
         for (int run = 0; run < 1000; run++) {
@@ -40,7 +39,7 @@ public class ResponseTimeProducer {
         Collections.sort(responseTimes);
         long medianResponseTime = responseTimes.get(responseTimes.size() / 2);
         System.out.println("Sent 10000 runs from file content.");
-        System.out.println("Median response time for 1k messages (ns): " + medianResponseTime);
+        System.out.println("Median response time for 1k messages (ms): " + medianResponseTime/1_000_000);
 
         connection.close();
     }
